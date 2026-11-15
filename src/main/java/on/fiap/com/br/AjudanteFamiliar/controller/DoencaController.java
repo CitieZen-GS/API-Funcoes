@@ -3,6 +3,8 @@ package on.fiap.com.br.AjudanteFamiliar.controller;
 import on.fiap.com.br.AjudanteFamiliar.dto.DoencaRequisicao;
 import on.fiap.com.br.AjudanteFamiliar.dto.DoencaResposta;
 import on.fiap.com.br.AjudanteFamiliar.services.DoencaService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -12,16 +14,19 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.List;
 
 @RestController
+@Tag(name = "Doenças", description = "Doenças do idoso")
 @RequiredArgsConstructor
 public class DoencaController {
 
     private final DoencaService doencaService;
 
+    @Operation(summary = "Lista as doenças do idoso")
     @GetMapping("/idosos/{idIdoso}/doencas")
     public List<DoencaResposta> listar(@PathVariable Long idIdoso) {
         return doencaService.listarPorIdoso(idIdoso);
     }
 
+    @Operation(summary = "Cadastra uma doença no idoso")
     @PostMapping("/idosos/{idIdoso}/doencas")
     public ResponseEntity<DoencaResposta> cadastrar(@PathVariable Long idIdoso,
                                                     @RequestBody @Valid DoencaRequisicao requisicao,
@@ -31,16 +36,19 @@ public class DoencaController {
         return ResponseEntity.created(uri).body(resposta);
     }
 
+    @Operation(summary = "Busca uma doença")
     @GetMapping("/doencas/{id}")
     public DoencaResposta buscarPorId(@PathVariable Long id) {
         return doencaService.buscarPorId(id);
     }
 
+    @Operation(summary = "Atualiza uma doença")
     @PutMapping("/doencas/{id}")
     public DoencaResposta atualizar(@PathVariable Long id, @RequestBody @Valid DoencaRequisicao requisicao) {
         return doencaService.atualizar(id, requisicao);
     }
 
+    @Operation(summary = "Remove uma doença")
     @DeleteMapping("/doencas/{id}")
     public ResponseEntity<Void> remover(@PathVariable Long id) {
         doencaService.remover(id);

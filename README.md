@@ -62,6 +62,8 @@ O schema do banco é gerenciado exclusivamente pelo Flyway. Migrations já merge
 
 ## Endpoints
 
+Documentação interativa (Swagger UI) em **http://localhost:8080/swagger-ui.html** e JSON OpenAPI em `/v3/api-docs`. Use o botão **Authorize** para informar o JWT.
+
 Todas as rotas exigem `Authorization: Bearer <jwt>`. O token é assinado em HS256 com o segredo `jwt.segredo` (variável `JWT_SEGREDO`) e traz a claim `roles`:
 
 - `CUIDADOR`: leitura e escrita (GET, POST, PUT, PATCH, DELETE)

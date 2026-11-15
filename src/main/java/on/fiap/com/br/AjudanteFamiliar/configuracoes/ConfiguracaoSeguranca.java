@@ -39,6 +39,8 @@ public class ConfiguracaoSeguranca {
                 .sessionManagement(sessao -> sessao.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(regras -> regras
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/error").permitAll()
+                        // Documentação Swagger é pública; as rotas da API continuam exigindo token
+                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/**").hasAnyRole("CUIDADOR", "FAMILIAR")
                         .anyRequest().hasRole("CUIDADOR"))
                 .oauth2ResourceServer(servidor -> servidor

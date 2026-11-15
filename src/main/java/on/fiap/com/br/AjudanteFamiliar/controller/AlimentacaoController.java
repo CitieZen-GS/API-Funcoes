@@ -4,6 +4,8 @@ import on.fiap.com.br.AjudanteFamiliar.dto.AlimentacaoRequisicao;
 import on.fiap.com.br.AjudanteFamiliar.dto.AlimentacaoResposta;
 import on.fiap.com.br.AjudanteFamiliar.models.enums.TipoAlimentacao;
 import on.fiap.com.br.AjudanteFamiliar.services.AlimentacaoService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -15,12 +17,14 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
+@Tag(name = "Alimentação", description = "Registro das refeições do idoso")
 @RequiredArgsConstructor
 public class AlimentacaoController {
 
     private final AlimentacaoService alimentacaoService;
 
     /** Filtros opcionais: ?data=2026-11-15&tipo=ALMOCO */
+    @Operation(summary = "Lista as refeições do idoso (filtros opcionais por dia e tipo)")
     @GetMapping("/idosos/{idIdoso}/alimentacoes")
     public List<AlimentacaoResposta> listar(@PathVariable Long idIdoso,
                                             @RequestParam(required = false)
@@ -29,6 +33,7 @@ public class AlimentacaoController {
         return alimentacaoService.listarPorIdoso(idIdoso, data, tipo);
     }
 
+    @Operation(summary = "Registra uma refeição")
     @PostMapping("/idosos/{idIdoso}/alimentacoes")
     public ResponseEntity<AlimentacaoResposta> cadastrar(@PathVariable Long idIdoso,
                                                          @RequestBody @Valid AlimentacaoRequisicao requisicao,
@@ -38,17 +43,20 @@ public class AlimentacaoController {
         return ResponseEntity.created(uri).body(resposta);
     }
 
+    @Operation(summary = "Busca uma refeição")
     @GetMapping("/alimentacoes/{id}")
     public AlimentacaoResposta buscarPorId(@PathVariable Long id) {
         return alimentacaoService.buscarPorId(id);
     }
 
+    @Operation(summary = "Atualiza uma refeição")
     @PutMapping("/alimentacoes/{id}")
     public AlimentacaoResposta atualizar(@PathVariable Long id,
                                          @RequestBody @Valid AlimentacaoRequisicao requisicao) {
         return alimentacaoService.atualizar(id, requisicao);
     }
 
+    @Operation(summary = "Remove uma refeição")
     @DeleteMapping("/alimentacoes/{id}")
     public ResponseEntity<Void> remover(@PathVariable Long id) {
         alimentacaoService.remover(id);
