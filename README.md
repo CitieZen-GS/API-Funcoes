@@ -59,3 +59,33 @@ O sistema é composto por 3 microsserviços que se comunicam via RabbitMQ:
 | `controller` | Recebe as requisições HTTP |
 
 O schema do banco é gerenciado exclusivamente pelo Flyway. Migrations já mergeadas nunca são editadas: crie sempre uma nova.
+
+## Endpoints
+
+Todas as rotas exigem `Authorization: Bearer <jwt>`. O token é assinado em HS256 com o segredo `jwt.segredo` (variável `JWT_SEGREDO`) e traz a claim `roles`:
+
+- `CUIDADOR`: leitura e escrita (GET, POST, PUT, PATCH, DELETE)
+- `FAMILIAR`: somente leitura (GET)
+
+Datas no formato `aaaa-mm-dd` e horas no formato `hh:mm`.
+
+| Recurso | Método e rota | Descrição |
+|---|---|---|
+| Idoso | `GET /idosos?idCuidador=` | Lista idosos (filtro opcional por cuidador) |
+| | `GET /idosos/{id}` | Busca idoso |
+| | `GET /idosos/{id}/resumo?data=` | Resumo do dia: doenças, medicamentos, atividades, alimentação e próximas consultas |
+| | `POST /idosos` · `PUT /idosos/{id}` · `DELETE /idosos/{id}` | Cadastra, atualiza, remove |
+| Doenças | `GET/POST /idosos/{idIdoso}/doencas` | Lista / cadastra |
+| | `GET/PUT/DELETE /doencas/{id}` | Busca / atualiza / remove |
+| Medicamentos | `GET/POST /idosos/{idIdoso}/medicamentos` | Lista / cadastra |
+| | `GET/PUT/DELETE /medicamentos/{id}` | Busca / atualiza / remove |
+| Atividades | `GET /idosos/{idIdoso}/atividades?data=` · `POST /idosos/{idIdoso}/atividades` | Lista (filtro por dia) / cadastra |
+| | `GET/PUT/DELETE /atividades/{id}` | Busca / atualiza / remove |
+| Alimentação | `GET /idosos/{idIdoso}/alimentacoes?data=&tipo=` · `POST /idosos/{idIdoso}/alimentacoes` | Lista (filtros por dia e tipo) / cadastra |
+| | `GET/PUT/DELETE /alimentacoes/{id}` | Busca / atualiza / remove |
+| Lembretes de consulta | `GET /idosos/{idIdoso}/lembretes-consulta?status=` · `POST /idosos/{idIdoso}/lembretes-consulta` | Lista (filtro por status) / cadastra |
+| | `GET/PUT/DELETE /lembretes-consulta/{id}` | Busca / atualiza / remove |
+| | `PATCH /lembretes-consulta/{id}/status` | Marca como `REALIZADO` ou `PENDENTE` |
+| | `POST/DELETE /lembretes-consulta/{id}/medicamentos/{idMedicamento}` | Vincula / desvincula medicamento |
+
+Respostas de erro: `400` dados inválidos, `401` sem token, `403` perfil sem permissão, `404` não encontrado, `409` conflito com o banco, `422` regra de negócio.
