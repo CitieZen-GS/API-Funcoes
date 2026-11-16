@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: AjudanteFamiliar
+
+  # Flyway: migrations com o padrão M_AJ_VXX__descricao.sql
+  flyway:
+    locations: classpath:db/migration
+    sql-migration-prefix: M_AJ_V
+
+  # O schema é gerenciado só pelo Flyway: o Hibernate não cria nem altera tabelas
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+
+# JWT: mesmo segredo usado pela API de autenticação para assinar os tokens (HS256, mínimo 32 caracteres).
+# Em produção, defina a variável de ambiente JWT_SEGREDO.
+jwt:
+  segredo: "${JWT_SEGREDO:ajudante-familiar-segredo-dev-troque-em-producao}"
+
+# Swagger / OpenAPI (springdoc): http://localhost:8080/swagger-ui.html
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: method
+    persist-authorization: true
