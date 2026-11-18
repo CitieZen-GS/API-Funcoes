@@ -7,7 +7,7 @@ services:
       - 'APP_USER=ajudante'
       - 'APP_USER_PASSWORD=secret'
     ports:
-      - '1521'
+      - '1521:1521'
     # O Spring só conecta quando o banco estiver pronto de verdade
     healthcheck:
       test: ['CMD', 'healthcheck.sh']
@@ -21,4 +21,4 @@ services:
       - 'RABBITMQ_DEFAULT_PASS=secret'
       - 'RABBITMQ_DEFAULT_USER=myuser'
     ports:
-      - '5672'
+      - '5672:5672'

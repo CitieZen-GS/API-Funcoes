@@ -16,6 +16,7 @@ Versões declaradas no `pom.xml`:
 - **Java 21**
 - **Spring Boot 4.1.2** (`spring-boot-starter-parent`)
 - **Maven**
+- **springdoc-openapi 3.1.0** (`springdoc-openapi-starter-webmvc-ui`): documentação Swagger / OpenAPI
 
 Dependências com versão gerenciada pelo Spring Boot 4.1.2 (sem versão explícita no `pom.xml`):
 
@@ -60,11 +61,102 @@ O sistema é composto por 3 microsserviços que se comunicam via RabbitMQ:
 
 O schema do banco é gerenciado exclusivamente pelo Flyway. Migrations já mergeadas nunca são editadas: crie sempre uma nova.
 
+## Como rodar
+
+### Pré-requisitos
+
+- **JDK 21** ou superior (`JAVA_HOME` apontando para ele)
+- **Docker Desktop** aberto, com o motor rodando ("Engine running") e em modo **Linux containers** (requer WSL 2 no Windows)
+
+Não é preciso instalar Maven, Oracle nem RabbitMQ: o projeto usa o Maven Wrapper (`mvnw`) e sobe os serviços pelo `compose.yaml`.
+
+### Subindo a aplicação
+
+```powershell
+# Windows (PowerShell)
+.\mvnw spring-boot:run
+
+# Linux / macOS
+./mvnw spring-boot:run
+```
+
+Ao iniciar, o Spring Boot executa o `docker compose up`, espera o Oracle ficar saudável (healthcheck), conecta usando as credenciais do `compose.yaml` e o Flyway cria as tabelas (`M_AJ_V01` a `M_AJ_V12`). Na primeira execução o download da imagem do Oracle pode levar alguns minutos.
+
+Quando a aplicação é encerrada, os containers que ela subiu são parados (`docker compose stop`).
+
+### Serviços e portas
+
+| Serviço | Endereço | Credenciais |
+|---|---|---|
+| API | http://localhost:8080 | JWT (ver [Endpoints](#endpoints)) |
+| Swagger UI | http://localhost:8080/swagger-ui.html | público |
+| Oracle Free | `localhost:1521`, serviço `FREEPDB1` | `ajudante` / `secret` (admin: `system` / `secret`) |
+| RabbitMQ (AMQP) | `localhost:5672` | `myuser` / `secret` |
+
+As portas são fixas no `compose.yaml`. Se alguma já estiver em uso na sua máquina (`netstat -ano | findstr :1521`), troque o número da esquerda, por exemplo `'1522:1521'`.
+
+### Acessando o banco (Oracle SQL Developer)
+
+Nova conexão com: usuário `ajudante`, senha `secret`, tipo **Básico**, host `localhost`, porta `1521` e **Nome do serviço** `FREEPDB1` (não SID). As tabelas ficam no schema `AJUDANTE`, junto com a `flyway_schema_history`.
+
+Para acessar o banco **sem a aplicação rodando**, suba só o Oracle:
+
+```powershell
+docker compose up -d oracle   # sobe o banco
+docker compose stop           # desliga, mantendo os dados
+```
+
+Se o container já estiver rodando quando a aplicação iniciar, ela o reutiliza e não o desliga ao encerrar.
+
+> **Atenção:** `docker compose down` remove os containers e, como não há volume configurado, **apaga os dados do banco**. Na próxima subida o Flyway recria as tabelas vazias.
+
+### Dados iniciais para teste
+
+O cadastro de cuidadores pertence à API de autenticação. Para testar localmente, crie um cuidador direto no banco:
+
+```sql
+INSERT INTO T_Ajudante_familiar_Cargo (nm_cargo, fg_permissao) VALUES ('Cuidador', 'S');
+INSERT INTO T_Ajudante_familiar_Perfil (nm_perfil, id_cargo) VALUES ('Cuidador', 1);
+INSERT INTO T_Ajudante_familiar_Cuidador (nm_cuidador, id_perfil) VALUES ('Maria', 1);
+COMMIT;
+```
+
+### Token JWT para teste
+
+Enquanto a API de autenticação não existe, gere um token em [jwt.io](https://jwt.io) com algoritmo **HS256**, o segredo de desenvolvimento `ajudante-familiar-segredo-dev-troque-em-producao` e o payload:
+
+```json
+{ "sub": "1", "roles": ["CUIDADOR"], "exp": 1893456000 }
+```
+
+Use `"roles": ["FAMILIAR"]` para testar o acesso somente leitura. No Swagger, cole o token em **Authorize** (sem o prefixo `Bearer`).
+
+### Variáveis de ambiente
+
+Em desenvolvimento nenhuma é obrigatória. Fora do Docker Compose (servidor ou `java -jar`, onde o `spring-boot-docker-compose` não é incluído), defina:
+
+| Variável | Descrição |
+|---|---|
+| `JWT_SEGREDO` | Segredo HS256 dos tokens (mínimo 32 caracteres, igual ao da API de autenticação) |
+| `SPRING_DATASOURCE_URL` | Ex.: `jdbc:oracle:thin:@//host:1521/FREEPDB1` |
+| `SPRING_DATASOURCE_USERNAME` / `SPRING_DATASOURCE_PASSWORD` | Usuário e senha do Oracle |
+| `SPRING_RABBITMQ_HOST` / `SPRING_RABBITMQ_PORT` | Endereço e porta do RabbitMQ |
+| `SPRING_RABBITMQ_USERNAME` / `SPRING_RABBITMQ_PASSWORD` | Usuário e senha do RabbitMQ |
+
+### Problemas comuns
+
+| Erro | Causa e solução |
+|---|---|
+| `mvnw` não é reconhecido | No PowerShell use `.\mvnw` |
+| `failed to connect to the docker API ... dockerDesktopLinuxEngine` | Docker Desktop fechado ou ainda iniciando: abra e espere "Engine running" |
+| `ORA-01017: invalid credential` | Container antigo, criado antes do `APP_USER`: rode `docker compose down` e suba de novo |
+| `port is already allocated` | Porta 1521 ou 5672 em uso: altere o número da esquerda no `compose.yaml` |
+
 ## Endpoints
 
 Documentação interativa (Swagger UI) em **http://localhost:8080/swagger-ui.html** e JSON OpenAPI em `/v3/api-docs`. Use o botão **Authorize** para informar o JWT.
 
-Todas as rotas exigem `Authorization: Bearer <jwt>`. O token é assinado em HS256 com o segredo `jwt.segredo` (em `application.yml`) (variável `JWT_SEGREDO`) e traz a claim `roles`:
+Todas as rotas exigem `Authorization: Bearer <jwt>`. O token é assinado em HS256 com o segredo `jwt.segredo` do `application.yml` (variável de ambiente `JWT_SEGREDO`) e traz a claim `roles`:
 
 - `CUIDADOR`: leitura e escrita (GET, POST, PUT, PATCH, DELETE)
 - `FAMILIAR`: somente leitura (GET)
