@@ -1,3 +1,8 @@
+# Projeto Docker Compose compartilhado por todas as APIs do Ajudante Familiar.
+# Com o mesmo nome, todas usam os mesmos containers (mesmo Oracle e mesmo RabbitMQ)
+# em vez de subir cópias que disputariam as portas 1521 e 5672.
+name: api-funcoes
+
 services:
   oracle:
     image: 'gvenzl/oracle-free:latest'
