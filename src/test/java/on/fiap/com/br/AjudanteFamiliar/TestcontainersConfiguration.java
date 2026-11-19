@@ -7,13 +7,18 @@ import org.testcontainers.oracle.OracleContainer;
 import org.testcontainers.rabbitmq.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import java.time.Duration;
+
 @TestConfiguration(proxyBeanMethods = false)
 class TestcontainersConfiguration {
 
 	@Bean
 	@ServiceConnection
 	OracleContainer oracleFreeContainer() {
-		return new OracleContainer(DockerImageName.parse("gvenzl/oracle-free:latest"));
+		// "slim-faststart": o banco já vem criado na imagem e sobe em segundos ("latest" costuma
+		// passar de 1 minuto, o tempo padrão do Testcontainers, e quebrar o teste e o CI)
+		return new OracleContainer(DockerImageName.parse("gvenzl/oracle-free:23-slim-faststart"))
+				.withStartupTimeout(Duration.ofMinutes(5));
 	}
 
 	@Bean
