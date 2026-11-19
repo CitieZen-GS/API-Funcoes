@@ -1,4 +1,4 @@
-# Ajudante Familiar: API de Funções
+# Ajudante Familiar: API de Funções.
 
 App para auxiliar nos cuidados de idosos. Este repositório contém a **API de funções**, responsável pelas operações HTTP de cuidador e paciente.
 
