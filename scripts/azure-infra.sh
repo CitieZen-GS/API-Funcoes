@@ -10,7 +10,7 @@
 # Este script cria a infraestrutura compartilhada (grupo, Application Insights, plano B1 e RabbitMQ)
 # e o Web App da API de funções. As outras APIs usam o mesmo grupo e plano: rode este script primeiro.
 RESOURCE_GROUP_NAME="gs-ajudantefamiliar"
-WEB_APP_NAME="ajudante-familiar-funcoes"   # igual ao WEB_APP_NAME do azure-pipeline.yaml
+WEB_APP_NAME="ajudante-familiar-funcoes"   # igual ao WEB_APP_NAME do azure-pipeline.yml
 APP_SERVICE_PLAN="ajudante-familiar-SP"
 LOCATION="brazilsouth"
 RUNTIME="JAVA:21-java21"
@@ -86,7 +86,7 @@ az webapp config appsettings set \
     ApplicationInsightsAgent_EXTENSION_VERSION="~3" \
     XDT_MicrosoftApplicationInsights_Mode="Recommended" \
     XDT_MicrosoftApplicationInsights_PreemptSdk="1"
-# Banco, RabbitMQ e JWT_SEGREDO NÃO ficam aqui: a pipeline (azure-pipeline.yaml) grava essas
+# Banco, RabbitMQ e JWT_SEGREDO NÃO ficam aqui: a pipeline (azure-pipeline.yml) grava essas
 # variáveis no Web App a cada deploy, a partir das Variables do Azure DevOps (senhas como secretas).
 
 # Manter o app sempre ligado (disponível no B1): evita a demora de subir o Spring Boot a cada acesso
