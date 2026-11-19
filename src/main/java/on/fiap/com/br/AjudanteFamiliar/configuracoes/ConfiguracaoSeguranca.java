@@ -7,8 +7,15 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import on.fiap.com.br.AjudanteFamiliar.services.TokensRevogadosService;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
@@ -19,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Valida o JWT emitido pela API de autenticação (HS256, segredo compartilhado).
+ * Tokens revogados no logout (recebidos via RabbitMQ) são recusados com 401.
  * <p>
  * O token deve ter a claim "roles" com CUIDADOR ou FAMILIAR, ex.: {"sub": "1", "roles": ["CUIDADOR"]}.
  * <ul>
@@ -49,13 +57,24 @@ public class ConfiguracaoSeguranca {
     }
 
     @Bean
-    public JwtDecoder decodificadorJwt() {
+    public JwtDecoder decodificadorJwt(TokensRevogadosService tokensRevogadosService) {
         byte[] bytes = segredo.getBytes(StandardCharsets.UTF_8);
         if (bytes.length < 32) {
             throw new IllegalStateException("jwt.segredo precisa ter pelo menos 32 caracteres (256 bits) para HS256");
         }
         SecretKeySpec chave = new SecretKeySpec(bytes, "HmacSHA256");
-        return NimbusJwtDecoder.withSecretKey(chave).macAlgorithm(MacAlgorithm.HS256).build();
+        NimbusJwtDecoder decodificador = NimbusJwtDecoder.withSecretKey(chave).macAlgorithm(MacAlgorithm.HS256).build();
+        // Validações padrão (exp, nbf) + recusar tokens revogados no logout (avisados via RabbitMQ)
+        decodificador.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
+                JwtValidators.createDefault(), validadorTokenRevogado(tokensRevogadosService)));
+        return decodificador;
+    }
+
+    private OAuth2TokenValidator<Jwt> validadorTokenRevogado(TokensRevogadosService tokensRevogadosService) {
+        OAuth2Error erro = new OAuth2Error("invalid_token", "Token revogado (logout)", null);
+        return jwt -> tokensRevogadosService.estaRevogado(jwt.getId())
+                ? OAuth2TokenValidatorResult.failure(erro)
+                : OAuth2TokenValidatorResult.success();
     }
 
     /** Converte a claim "roles" em ROLE_CUIDADOR / ROLE_FAMILIAR. */
