@@ -40,7 +40,7 @@ Além disso, o cuidador conversa com uma IA que consulta a linha do tempo do ido
 
 ![Arquitetura macro do Ajudante Familiar na Azure](docs/arquitetura-ajudante-familiar.png)
 
-Três microsserviços Spring Boot, cada um em um **Azure App Service** (Linux, Java 21, mesmo plano B1), um banco **Oracle** compartilhado (cada API cria só as próprias tabelas, via Flyway), **RabbitMQ** em um **Azure Container Instance** e o **Application Insights** para monitoramento. Código, tarefas e pipelines ficam no **Azure DevOps** (Boards, Repos e Pipelines).
+Três microsserviços Spring Boot, cada um em um **Azure App Service** (Linux, Java 21, mesmo plano B3), um banco **Oracle Free** compartilhado (cada API cria só as próprias tabelas, via Flyway) e o **RabbitMQ**, ambos em **Azure Container Instances** e o **Application Insights** para monitoramento. Código, tarefas e pipelines ficam no **Azure DevOps** (Boards, Repos e Pipelines).
 
 | Serviço | Responsabilidade | Porta local |
 |---|---|---|
@@ -355,9 +355,10 @@ Os testes usam **Testcontainers** (Oracle Free e RabbitMQ reais), então o Docke
 O script [`scripts/azure-infra.sh`](scripts/azure-infra.sh) é **o mesmo arquivo nos 3 repositórios** e cria **toda** a infraestrutura do sistema, no grupo `gs-ajudantefamiliar` (região `brazilsouth`):
 
 - Application Insights `ai-ajudante-familiar`
-- Plano do App Service `ajudante-familiar-SP` (Linux, B1)
+- Plano do App Service `ajudante-familiar-SP` (Linux, B3: 4 vCPUs e 7 GB para as 3 APIs)
 - Os 3 Web Apps, `ajudante-familiar-funcoes`, `ajudante-familiar-autenticacao` e `ajudante-familiar-rag` (Java 21, Always On, ligados ao Application Insights)
 - RabbitMQ `rabbitmq-ajudante-familiar` no Azure Container Instance (imagem `rabbitmq:4-management`, portas 5672 e 15672). A senha é digitada ao rodar o script e não fica salva.
+- Banco Oracle `oracle-ajudante-familiar` no Azure Container Instance (imagem `gvenzl/oracle-free:23-slim-faststart`, porta 1521, serviço `FREEPDB1`, usuário `ajudante`). As senhas do usuário e do administrador são digitadas ao rodar o script. Sem volume: se o container for recriado, os dados se perdem, e basta rodar de novo a pipeline desta API (o Flyway recria as tabelas) antes das outras duas.
 
 ```bash
 az login
