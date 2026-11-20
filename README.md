@@ -90,7 +90,8 @@ API-Funcoes/
 │   └── compose.yaml            # Oracle e RabbitMQ para desenvolvimento local
 ├── docs/                       # desenho da arquitetura
 ├── scripts/
-│   ├── azure-infra.sh          # Azure CLI: grupo, plano B1, Application Insights, RabbitMQ (ACI) e Web App
+│   ├── azure-infra.sh          # Azure CLI: toda a infraestrutura (igual nos 3 repositórios)
+│   ├── sincronizar-infra.sh    # confere ou replica os scripts de infra nos 3 repositórios
 │   └── script-bd.sql           # DDL de todas as tabelas desta API
 ├── src/main/java/on/fiap/com/br/AjudanteFamiliar/
 │   ├── controller/             # rotas HTTP e tratamento global de erros
@@ -351,11 +352,11 @@ Os testes usam **Testcontainers** (Oracle Free e RabbitMQ reais), então o Docke
 
 ### 1. Infraestrutura (Azure CLI)
 
-O script [`scripts/azure-infra.sh`](scripts/azure-infra.sh) cria, no grupo `gs-ajudantefamiliar` (região `brazilsouth`):
+O script [`scripts/azure-infra.sh`](scripts/azure-infra.sh) é **o mesmo arquivo nos 3 repositórios** e cria **toda** a infraestrutura do sistema, no grupo `gs-ajudantefamiliar` (região `brazilsouth`):
 
 - Application Insights `ai-ajudante-familiar`
 - Plano do App Service `ajudante-familiar-SP` (Linux, B1)
-- Web App `ajudante-familiar-funcoes` (Java 21, Always On, ligado ao Application Insights)
+- Os 3 Web Apps, `ajudante-familiar-funcoes`, `ajudante-familiar-autenticacao` e `ajudante-familiar-rag` (Java 21, Always On, ligados ao Application Insights)
 - RabbitMQ `rabbitmq-ajudante-familiar` no Azure Container Instance (imagem `rabbitmq:4-management`, portas 5672 e 15672). A senha é digitada ao rodar o script e não fica salva.
 
 ```bash
@@ -363,7 +364,9 @@ az login
 bash scripts/azure-infra.sh
 ```
 
-Rode este script **antes** dos scripts da autenticação e do RAG, que reaproveitam o grupo, o plano e o Application Insights.
+Basta rodar **uma vez**, de qualquer um dos repositórios. Recursos que já existem são mantidos, então o script pode ser executado de novo sem duplicar nada (a senha do RabbitMQ só é pedida na criação). No fim, ele mostra o endereço de cada Web App e os valores do RabbitMQ para as variáveis das pipelines. Se algum comando falhar, o script para na hora e mostra o que falhou.
+
+Para alterar o script, edite a cópia de um dos repositórios e rode `bash scripts/sincronizar-infra.sh --copiar` para replicá-la nos outros dois (os 3 repositórios precisam estar clonados lado a lado). Sem opção, `bash scripts/sincronizar-infra.sh` só confere se as 3 cópias estão iguais.
 
 ### 2. Azure DevOps
 
