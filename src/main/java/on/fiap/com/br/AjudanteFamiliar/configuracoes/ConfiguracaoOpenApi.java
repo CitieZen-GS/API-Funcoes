@@ -26,7 +26,7 @@ public class ConfiguracaoOpenApi {
         return new OpenAPI()
                 .info(new Info()
                         .title("Ajudante Familiar: API de Funções")
-                        .version("v1")
+                        .version("v1.1")
                         .description("""
                                 Funções do app de cuidados de idosos: cadastro de medicamentos, atividades,                                 alimentação, doenças, lembretes de consulta e busca de dados do idoso.
 
